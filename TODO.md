@@ -16,11 +16,12 @@ This is a platform system in the constitutional sense: the config drives the cre
 
 ### Cloudflare Health Checks
 
-- Native to Cloudflare, which is already used for DNS
+- Native to Cloudflare, which is already used for DNS (no additional account needed)
 - Manageable via Terraform (Cloudflare provider)
-- No additional account needed
 - Health check features are fairly basic compared to dedicated tools
-- Tied to Cloudflare — not portable if DNS moves away
+- Can monitor any publicly reachable hostname or IP address — not restricted to Cloudflare-proxied targets
+- No free tier: requires Pro plan ($25/mo) for 10 checks, Business plan ($250/mo) for 50 checks
+- Now marketed as part of "Smart Shield" — product positioning is drifting away from standalone monitoring
 
 ### UptimeRobot
 
@@ -43,6 +44,24 @@ This is a platform system in the constitutional sense: the config drives the cre
 ### Why not Prometheus?
 
 Prometheus is pull-based: it scrapes metrics from targets that expose a `/metrics` endpoint. Websites don't instrument themselves this way. While the Blackbox Exporter can simulate HTTP checks, this adds operational overhead (Prometheus instance, exporter, storage) for a problem that dedicated uptime tools solve natively. Prometheus belongs in the platform as infrastructure for applications to emit metrics — not for external uptime checks.
+
+
+## Validation and Remediation Strategy
+
+The constitutional validation/remediation loop maps directly onto a scheduled `terraform apply`:
+
+- `terraform apply` is inherently both validation and remediation in one command: it compares declared config against actual state (validation), and if drift is detected it re-applies to correct it (remediation).
+- On the first run with an empty state, `apply` provisions all declared health checks.
+- On subsequent runs, if nothing has drifted it is a no-op; if a health check was accidentally deleted or modified outside Terraform, `apply` recreates or corrects it.
+
+### GitHub Actions Workflow
+
+A single workflow covers both triggers:
+
+1. **On push to `main`** — runs `terraform apply` immediately to realise any config change
+2. **On schedule** (e.g. daily) — runs `terraform apply` to detect and self-heal drift
+
+Both triggers run the same job. No separate validation step is needed — `apply` subsumes it. This satisfies the constitutional requirement that validation runs automatically, covers every declared item, and triggers on config changes and periodically.
 
 
 ## Open Question: Alerting
