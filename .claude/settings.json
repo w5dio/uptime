@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fetch-constitution.sh",
+            "timeout": 5,
+            "statusMessage": "Loading constitution principles..."
+          }
+        ]
+      }
+    ]
+  }
+}
